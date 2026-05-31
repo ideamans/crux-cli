@@ -1,5 +1,5 @@
 # Build output
-crux
+/crux
 dist/
 
 # Go
