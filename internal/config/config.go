@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	ProjectID     string `json:"project_id"`
+	APIKey        string `json:"api_key"`
 	CacheDir      string `json:"cache_dir"`
 	DefaultFormat string `json:"default_format"`
 	DefaultMonths int    `json:"default_months"`
@@ -78,4 +79,16 @@ func (c *Config) ProjectIDResolved(flagValue string) string {
 		return env
 	}
 	return c.ProjectID
+}
+
+// APIKeyResolved returns the effective CrUX API key.
+// Priority: flag value > CRUX_API_KEY env > config file.
+func (c *Config) APIKeyResolved(flagValue string) string {
+	if flagValue != "" {
+		return flagValue
+	}
+	if env := os.Getenv("CRUX_API_KEY"); env != "" {
+		return env
+	}
+	return c.APIKey
 }

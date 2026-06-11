@@ -10,6 +10,7 @@ import (
 	"github.com/ideamans/crux-cli/internal/cache"
 	"github.com/ideamans/crux-cli/internal/config"
 	"github.com/ideamans/crux-cli/internal/crux"
+	"github.com/ideamans/crux-cli/internal/cruxapi"
 	"github.com/ideamans/crux-cli/internal/formatter"
 	"github.com/ideamans/crux-cli/internal/runner"
 	"github.com/spf13/cobra"
@@ -23,7 +24,7 @@ func main() {
 
 var rootCmd = &cobra.Command{
 	Use:   "crux",
-	Short: "Query Chrome UX Report (CrUX) data via BigQuery",
+	Short: "Query Chrome UX Report (CrUX) data via BigQuery or the CrUX API",
 }
 
 // ── crux device ───────────────────────────────────────────────────────────────
@@ -168,11 +169,123 @@ func dedup(ss []string) []string {
 	return out
 }
 
+// ── crux history / record (CrUX API) ───────────────────────────────────────────
+
+var (
+	flagAPIOrigins []string
+	flagAPIUrls    []string
+	flagAPIDevice  string
+	flagAPIMetrics string
+	flagAPIFormat  string
+	flagAPIKey     string
+	flagAPIPeriods int
+)
+
+var historyCmd = &cobra.Command{
+	Use:   "history",
+	Short: "Query the CrUX History API (weekly time series) for an origin or url",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return runAPI(true)
+	},
+}
+
+var recordCmd = &cobra.Command{
+	Use:   "record",
+	Short: "Query the CrUX API for the latest record (28-day snapshot) of an origin or url",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return runAPI(false)
+	},
+}
+
+func addAPIFlags(cmd *cobra.Command, history bool) {
+	f := cmd.Flags()
+	f.StringArrayVarP(&flagAPIOrigins, "origin", "o", nil, "Origin(s) to query (repeat or comma-separate)")
+	f.StringArrayVarP(&flagAPIUrls, "url", "u", nil, "URL(s) to query a specific page (repeat or comma-separate)")
+	f.StringVarP(&flagAPIDevice, "device", "d", "all", "Form factor: phone / desktop / tablet / all (all = aggregate)")
+	f.StringVar(&flagAPIMetrics, "metrics", "", "Metrics to query, comma-separated (default: lcp,cls,inp)\nAvailable: lcp,cls,inp,fcp,ttfb,rtt")
+	f.StringVarP(&flagAPIFormat, "format", "f", "", "Output format: table / json / csv")
+	f.StringVar(&flagAPIKey, "api-key", "", "CrUX API key (overrides CRUX_API_KEY env and config)")
+	if history {
+		f.IntVar(&flagAPIPeriods, "periods", 0, "Number of weekly collection periods, 1-40 (default 25)")
+	}
+}
+
+func init() {
+	rootCmd.AddCommand(historyCmd)
+	rootCmd.AddCommand(recordCmd)
+	addAPIFlags(historyCmd, true)
+	addAPIFlags(recordCmd, false)
+}
+
+func runAPI(history bool) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	origins := dedup(formatter.SplitOrigins(flagAPIOrigins))
+	urls := dedup(formatter.SplitOrigins(flagAPIUrls))
+	if len(origins) == 0 && len(urls) == 0 {
+		return fmt.Errorf("at least one --origin or --url is required")
+	}
+
+	device := strings.ToLower(flagAPIDevice)
+	switch device {
+	case "phone", "desktop", "tablet", "all":
+	default:
+		return fmt.Errorf("invalid --device %q: must be phone, desktop, tablet, or all", flagAPIDevice)
+	}
+
+	if history && flagAPIPeriods != 0 && (flagAPIPeriods < 1 || flagAPIPeriods > 40) {
+		return fmt.Errorf("--periods must be between 1 and 40")
+	}
+
+	format := flagAPIFormat
+	if format == "" {
+		format = cfg.DefaultFormat
+	}
+	if format == "" {
+		format = "table"
+	}
+
+	var metrics []string
+	if flagAPIMetrics != "" {
+		for _, m := range strings.Split(flagAPIMetrics, ",") {
+			t := strings.ToLower(strings.TrimSpace(m))
+			if t == "" {
+				continue
+			}
+			if _, ok := cruxapi.MetricByKey(t); !ok {
+				return fmt.Errorf("invalid metric %q: available are lcp,cls,inp,fcp,ttfb,rtt", t)
+			}
+			metrics = append(metrics, t)
+		}
+	}
+
+	apiKey := cfg.APIKeyResolved(flagAPIKey)
+	if apiKey == "" {
+		return fmt.Errorf("CrUX API key is required: use --api-key, CRUX_API_KEY env, or `crux auth set-api-key <key>`")
+	}
+
+	client := cruxapi.New(apiKey)
+	opts := runner.APIOptions{
+		Origins:  origins,
+		URLs:     urls,
+		Device:   device,
+		Metrics:  metrics,
+		Format:   format,
+		History:  history,
+		Periods:  flagAPIPeriods,
+		Progress: os.Stdout,
+	}
+	return runner.RunAPI(context.Background(), client, opts, os.Stdout)
+}
+
 // ── crux auth ─────────────────────────────────────────────────────────────────
 
 var authCmd = &cobra.Command{
 	Use:   "auth",
-	Short: "Manage BigQuery authentication",
+	Short: "Manage BigQuery credentials and the CrUX API key",
 }
 
 var authStatusCmd = &cobra.Command{
@@ -192,6 +305,39 @@ var authStatusCmd = &cobra.Command{
 		}
 		fmt.Println("Credentials : Application Default Credentials")
 		fmt.Println("             (run `gcloud auth application-default login` to configure)")
+		apiKey := cfg.APIKeyResolved("")
+		if apiKey == "" {
+			fmt.Println("CrUX API key: (not set)")
+		} else {
+			fmt.Printf("CrUX API key: %s\n", maskKey(apiKey))
+		}
+		return nil
+	},
+}
+
+// maskKey returns an API key with all but the last 4 characters hidden.
+func maskKey(key string) string {
+	if len(key) <= 4 {
+		return strings.Repeat("*", len(key))
+	}
+	return strings.Repeat("*", len(key)-4) + key[len(key)-4:]
+}
+
+var authSetAPIKeyCmd = &cobra.Command{
+	Use:   "set-api-key <api-key>",
+	Short: "Set the CrUX API key in the config file",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.Load()
+		if err != nil {
+			return err
+		}
+		cfg.APIKey = args[0]
+		if err := config.Save(cfg); err != nil {
+			return err
+		}
+		fmt.Printf("CrUX API key set to %s\n", maskKey(args[0]))
+		fmt.Printf("Saved: %s\n", config.Path())
 		return nil
 	},
 }
@@ -219,6 +365,7 @@ func init() {
 	rootCmd.AddCommand(authCmd)
 	authCmd.AddCommand(authStatusCmd)
 	authCmd.AddCommand(authSetProjectCmd)
+	authCmd.AddCommand(authSetAPIKeyCmd)
 }
 
 // ── crux cache ────────────────────────────────────────────────────────────────

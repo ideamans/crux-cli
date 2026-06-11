@@ -31,9 +31,13 @@ crux <subcommand> [options]
 
 | サブコマンド | 説明 |
 |---|---|
-| `device`   | `chrome-ux-report.materialized.device_summary` をクエリ |
-| `auth`     | BigQuery 認証の管理 |
+| `device`   | `chrome-ux-report.materialized.device_summary` を BigQuery でクエリ |
+| `history`  | CrUX API（queryHistoryRecord）で週次の時系列を取得 |
+| `record`   | CrUX API（queryRecord）で最新レコードを取得 |
+| `auth`     | BigQuery 認証および CrUX API キーの管理 |
 | `cache`    | キャッシュの管理 |
+
+> `device` は BigQuery（要 GCP プロジェクト・課金）、`history` / `record` は無料の CrUX API（要 API キー）を使う。両者は独立した経路。
 
 ---
 
@@ -134,16 +138,70 @@ ORDER BY origin, yyyymm DESC, device
 
 ---
 
+### `crux history` / `crux record`（CrUX API）
+
+[CrUX API](https://developer.chrome.com/docs/crux/api) を使い、オリジンまたは特定 URL の直近28日間ローリング分布を取得する。BigQuery と異なり **url（特定ページ）** も指定できる。
+
+- `crux history` — `records:queryHistoryRecord`。週次の時系列（`--periods` 1〜40、デフォルト25）。
+- `crux record` — `records:queryRecord`。最新の単一レコード（28日スナップショット）。
+
+#### 使い方
+
+```
+crux history (--origin <origin> | --url <url>) [options]
+crux record  (--origin <origin> | --url <url>) [options]
+```
+
+`--origin`（`-o`）と `--url`（`-u`）はそれぞれ繰り返し・カンマ区切りで複数指定でき、両方を混在させてもよい。少なくとも1つ必須。
+
+#### オプション
+
+| オプション | 短縮 | デフォルト | 説明 |
+|---|---|---|---|
+| `--origin` | `-o` | | クエリ対象のオリジン（繰り返し・カンマ区切り可） |
+| `--url` | `-u` | | クエリ対象の URL（特定ページ。繰り返し・カンマ区切り可） |
+| `--device` | `-d` | `all` | フォームファクタ: `phone` / `desktop` / `tablet` / `all`。`all` は全デバイス集計（API で formFactor を省略） |
+| `--periods` | | `25` | （history のみ）週次期間の数（1〜40） |
+| `--metrics` | | (lcp,cls,inp) | 取得指標。指定可能: `lcp,cls,inp,fcp,ttfb,rtt` |
+| `--format` | `-f` | `table` | `table` / `json` / `csv` |
+| `--api-key` | | 設定/環境変数参照 | CrUX API キー |
+
+#### BigQuery 版（`device`）との差異
+
+- **対象単位**: origin に加え url（特定ページ）に対応。
+- **デバイス**: `all` はデバイス別内訳ではなく **全デバイスの集計** 1レコードを返す（CrUX API の仕様）。
+- **期間**: 月次ではなく週次のローリング期間。表では各期間を **終了日（YYYY-MM-DD）** でラベル付け。
+- **キャッシュ**: API は無料・低レイテンシのためキャッシュは行わない。
+- **指標**: API は good/needs-improvement/poor の3バケット密度 + p75 を返す。`Good%` は good バケットの密度。`ol`/`fid` は API には存在しないため非対応。
+
+#### API メトリクス名の対応
+
+| キー | CrUX API メトリクス名 |
+|---|---|
+| `lcp` | `largest_contentful_paint` |
+| `cls` | `cumulative_layout_shift` |
+| `inp` | `interaction_to_next_paint` |
+| `fcp` | `first_contentful_paint` |
+| `ttfb` | `experimental_time_to_first_byte` |
+| `rtt` | `round_trip_time` |
+
+---
+
 ### `crux auth`
 
-BigQuery 認証情報の管理。
+BigQuery 認証情報および CrUX API キーの管理。
 
 ```
-crux auth login          # Application Default Credentials でログイン (gcloud ラップ)
-crux auth logout         # 認証情報を削除
-crux auth status         # 現在の認証状態を確認
+crux auth status                    # 現在の認証状態・プロジェクト・API キーの有無を確認
 crux auth set-project <project-id>  # デフォルト BigQuery プロジェクトを設定
+crux auth set-api-key <api-key>     # CrUX API キーを設定（~/.crux-cli/config.json に保存）
 ```
+
+#### CrUX API キーの解決順序
+
+1. `--api-key` オプション
+2. `CRUX_API_KEY` 環境変数
+3. `~/.crux-cli/config.json` の `api_key`
 
 ---
 
@@ -278,8 +336,11 @@ crux device -o A -o B -o C --months 60 を実行
 ### フォーマット
 
 ```yaml
-# BigQuery プロジェクト ID（必須）
+# BigQuery プロジェクト ID（device コマンドで必須）
 project_id: "your-gcp-project-id"
+
+# CrUX API キー（history / record コマンドで必須）
+api_key: "your-crux-api-key"
 
 # キャッシュディレクトリ（デフォルト: ~/.crux-cli/cache）
 cache_dir: ""
