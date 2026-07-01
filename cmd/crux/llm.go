@@ -101,6 +101,8 @@ COMMANDS & FLAGS
     -d, --device     phone | desktop | tablet | all   (default all)
                      NOTE: here "all" = AGGREGATE across devices (one record),
                      NOT a per-device breakdown like "crux device".
+    -c, --connection 4g | 3g | 2g | slow-2g | offline | all  (default all)
+                     effective connection type filter; "all" = aggregate.
         --periods    (history only) weekly periods, 1-40 (default 25)
         --metrics    comma list of: lcp,cls,inp,fcp,ttfb,rtt (default lcp,cls,inp)
                      (ol and fid are NOT available via the API)

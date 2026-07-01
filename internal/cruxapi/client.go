@@ -40,29 +40,32 @@ func New(apiKey string) *Client {
 
 // Query identifies a single record lookup. Exactly one of Origin/URL must be set.
 type Query struct {
-	Origin                string
-	URL                   string
-	FormFactor            string   // "PHONE"/"DESKTOP"/"TABLET"; empty = aggregate across all
-	Metrics               []string // API metric names; empty = all available
-	CollectionPeriodCount int      // history only; 1-40, 0 = API default (25)
+	Origin                  string
+	URL                     string
+	FormFactor              string   // "PHONE"/"DESKTOP"/"TABLET"; empty = aggregate across all
+	EffectiveConnectionType string   // "4G"/"3G"/"2G"/"slow-2G"/"offline"; empty = aggregate across all
+	Metrics                 []string // API metric names; empty = all available
+	CollectionPeriodCount   int      // history only; 1-40, 0 = API default (25)
 }
 
 // apiRequest is the JSON request body.
 type apiRequest struct {
-	Origin                string   `json:"origin,omitempty"`
-	URL                   string   `json:"url,omitempty"`
-	FormFactor            string   `json:"formFactor,omitempty"`
-	Metrics               []string `json:"metrics,omitempty"`
-	CollectionPeriodCount int      `json:"collectionPeriodCount,omitempty"`
+	Origin                  string   `json:"origin,omitempty"`
+	URL                     string   `json:"url,omitempty"`
+	FormFactor              string   `json:"formFactor,omitempty"`
+	EffectiveConnectionType string   `json:"effectiveConnectionType,omitempty"`
+	Metrics                 []string `json:"metrics,omitempty"`
+	CollectionPeriodCount   int      `json:"collectionPeriodCount,omitempty"`
 }
 
 func (q Query) request() apiRequest {
 	return apiRequest{
-		Origin:                q.Origin,
-		URL:                   q.URL,
-		FormFactor:            q.FormFactor,
-		Metrics:               q.Metrics,
-		CollectionPeriodCount: q.CollectionPeriodCount,
+		Origin:                  q.Origin,
+		URL:                     q.URL,
+		FormFactor:              q.FormFactor,
+		EffectiveConnectionType: q.EffectiveConnectionType,
+		Metrics:                 q.Metrics,
+		CollectionPeriodCount:   q.CollectionPeriodCount,
 	}
 }
 

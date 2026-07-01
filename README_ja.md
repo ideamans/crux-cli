@@ -150,6 +150,7 @@ crux history (--origin <origin> | --url <url>) [フラグ]
 | `--origin` | `-o` | | クエリ対象のオリジン。繰り返しまたはカンマ区切りで複数指定可 |
 | `--url` | `-u` | | 特定ページの URL。繰り返しまたはカンマ区切りで複数指定可 |
 | `--device` | `-d` | `all` | フォームファクタ: `phone` / `desktop` / `tablet` / `all`。`all` は全デバイスの集計 |
+| `--connection` | `-c` | `all` | 実効接続タイプ: `4g` / `3g` / `2g` / `slow-2g` / `offline` / `all`。`all` は全接続タイプの集計 |
 | `--periods` | | `25` | 取得する週次期間の数（`1`〜`40`） |
 | `--metrics` | | | 取得する指標をカンマ区切りで指定。指定可能: `lcp,cls,inp,fcp,ttfb,rtt` |
 | `--format` | `-f` | `table` | `table` / `json` / `csv` |
@@ -163,6 +164,9 @@ crux history -o https://web.dev -d phone
 
 # 特定ページ、全指標、40期間
 crux history -u https://web.dev/learn --metrics lcp,cls,inp,fcp,ttfb,rtt --periods 40
+
+# スマートフォンかつ 4G 接続のユーザーのみ
+crux history -o https://web.dev -d phone -c 4g
 
 # オリジンとページを JSON で比較
 crux history -o https://web.dev -u https://web.dev/learn -f json

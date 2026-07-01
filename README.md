@@ -150,6 +150,7 @@ crux history (--origin <origin> | --url <url>) [flags]
 | `--origin` | `-o` | | Origin(s) to query. Repeat or comma-separate |
 | `--url` | `-u` | | URL(s) to query a specific page. Repeat or comma-separate |
 | `--device` | `-d` | `all` | Form factor: `phone` / `desktop` / `tablet` / `all`. `all` = aggregate across devices |
+| `--connection` | `-c` | `all` | Effective connection type: `4g` / `3g` / `2g` / `slow-2g` / `offline` / `all`. `all` = aggregate across connection types |
 | `--periods` | | `25` | Number of weekly collection periods, `1`–`40` |
 | `--metrics` | | | Metrics to query, comma-separated. Available: `lcp,cls,inp,fcp,ttfb,rtt` |
 | `--format` | `-f` | `table` | `table` / `json` / `csv` |
@@ -163,6 +164,9 @@ crux history -o https://web.dev -d phone
 
 # A specific page, all metrics, 40 periods
 crux history -u https://web.dev/learn --metrics lcp,cls,inp,fcp,ttfb,rtt --periods 40
+
+# Phone users on a 4G connection only
+crux history -o https://web.dev -d phone -c 4g
 
 # Compare origin vs. a page as JSON
 crux history -o https://web.dev -u https://web.dev/learn -f json

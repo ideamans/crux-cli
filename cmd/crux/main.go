@@ -172,13 +172,14 @@ func dedup(ss []string) []string {
 // ── crux history / record (CrUX API) ───────────────────────────────────────────
 
 var (
-	flagAPIOrigins []string
-	flagAPIUrls    []string
-	flagAPIDevice  string
-	flagAPIMetrics string
-	flagAPIFormat  string
-	flagAPIKey     string
-	flagAPIPeriods int
+	flagAPIOrigins    []string
+	flagAPIUrls       []string
+	flagAPIDevice     string
+	flagAPIConnection string
+	flagAPIMetrics    string
+	flagAPIFormat     string
+	flagAPIKey        string
+	flagAPIPeriods    int
 )
 
 var historyCmd = &cobra.Command{
@@ -202,6 +203,7 @@ func addAPIFlags(cmd *cobra.Command, history bool) {
 	f.StringArrayVarP(&flagAPIOrigins, "origin", "o", nil, "Origin(s) to query (repeat or comma-separate)")
 	f.StringArrayVarP(&flagAPIUrls, "url", "u", nil, "URL(s) to query a specific page (repeat or comma-separate)")
 	f.StringVarP(&flagAPIDevice, "device", "d", "all", "Form factor: phone / desktop / tablet / all (all = aggregate)")
+	f.StringVarP(&flagAPIConnection, "connection", "c", "all", "Effective connection type: 4g / 3g / 2g / slow-2g / offline / all (all = aggregate)")
 	f.StringVar(&flagAPIMetrics, "metrics", "", "Metrics to query, comma-separated (default: lcp,cls,inp)\nAvailable: lcp,cls,inp,fcp,ttfb,rtt")
 	f.StringVarP(&flagAPIFormat, "format", "f", "", "Output format: table / json / csv")
 	f.StringVar(&flagAPIKey, "api-key", "", "CrUX API key (overrides CRUX_API_KEY env and config)")
@@ -234,6 +236,13 @@ func runAPI(history bool) error {
 	case "phone", "desktop", "tablet", "all":
 	default:
 		return fmt.Errorf("invalid --device %q: must be phone, desktop, tablet, or all", flagAPIDevice)
+	}
+
+	connection := strings.ToLower(flagAPIConnection)
+	switch connection {
+	case "4g", "3g", "2g", "slow-2g", "offline", "all":
+	default:
+		return fmt.Errorf("invalid --connection %q: must be 4g, 3g, 2g, slow-2g, offline, or all", flagAPIConnection)
 	}
 
 	if history && flagAPIPeriods != 0 && (flagAPIPeriods < 1 || flagAPIPeriods > 40) {
@@ -269,14 +278,15 @@ func runAPI(history bool) error {
 
 	client := cruxapi.New(apiKey)
 	opts := runner.APIOptions{
-		Origins:  origins,
-		URLs:     urls,
-		Device:   device,
-		Metrics:  metrics,
-		Format:   format,
-		History:  history,
-		Periods:  flagAPIPeriods,
-		Progress: os.Stdout,
+		Origins:    origins,
+		URLs:       urls,
+		Device:     device,
+		Connection: connection,
+		Metrics:    metrics,
+		Format:     format,
+		History:    history,
+		Periods:    flagAPIPeriods,
+		Progress:   os.Stdout,
 	}
 	return runner.RunAPI(context.Background(), client, opts, os.Stdout)
 }
