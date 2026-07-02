@@ -54,7 +54,7 @@ crux auth set-project YOUR_GCP_PROJECT_ID
 CrUX API の利用には API キーが必要です。[Google Cloud Console](https://console.cloud.google.com/apis/credentials) で *Chrome UX Report API* を有効化して API キーを発行し、次のいずれかの方法で指定します：
 
 ```bash
-# 設定ファイル（~/.crux-cli/config.json）に保存
+# 設定ファイル（~/.config/crux-cli/config.json）に保存
 crux auth set-api-key YOUR_CRUX_API_KEY
 
 # …またはシェルの環境変数で指定
@@ -211,10 +211,10 @@ crux cache clear -o <origin>  # 特定オリジンのキャッシュを削除
 
 ## キャッシュの仕組み
 
-キャッシュファイルはデフォルトで `~/.crux-cli/cache/` に保存されます。
+キャッシュファイルはデフォルトで `~/.config/crux-cli/cache/` に保存されます。
 
 ```
-~/.crux-cli/cache/
+~/.config/crux-cli/cache/
   latest_month.json                   # CrUX の最新月（24時間ごとに更新確認）
   device/
     <オリジンのハッシュ>/
@@ -228,13 +228,13 @@ crux cache clear -o <origin>  # 特定オリジンのキャッシュを削除
 
 ## 設定ファイル
 
-設定は `~/.crux-cli/config.json` に保存されます。
+設定は `~/.config/crux-cli/config.json` に保存されます（`XDG_CONFIG_HOME` を尊重し、`CRUX_CLI_HOME` でディレクトリを上書きできます）。
 
 | キー | デフォルト | 説明 |
 |---|---|---|
 | `project_id` | | BigQuery プロジェクト ID |
 | `api_key` | | CrUX API キー |
-| `cache_dir` | `~/.crux-cli/cache` | キャッシュディレクトリのパス |
+| `cache_dir` | `~/.config/crux-cli/cache` | キャッシュディレクトリのパス |
 | `default_format` | `table` | デフォルトの出力形式 |
 | `default_months` | `12` | デフォルトの取得月数 |
 
@@ -245,6 +245,7 @@ crux cache clear -o <origin>  # 特定オリジンのキャッシュを削除
 | `CRUX_PROJECT` | BigQuery プロジェクト ID |
 | `CRUX_API_KEY` | CrUX API キー |
 | `CRUX_CACHE_DIR` | キャッシュディレクトリのパス |
+| `CRUX_CLI_HOME` | 設定ディレクトリ（デフォルト `~/.config/crux-cli`。`XDG_CONFIG_HOME` も尊重） |
 
 ## ライセンス
 

@@ -54,7 +54,7 @@ crux auth set-project YOUR_GCP_PROJECT_ID
 The CrUX API needs an API key. Create one in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (enable the *Chrome UX Report API*), then provide it one of these ways:
 
 ```bash
-# Save it to the config file (~/.crux-cli/config.json)
+# Save it to the config file (~/.config/crux-cli/config.json)
 crux auth set-api-key YOUR_CRUX_API_KEY
 
 # …or set it per shell session
@@ -215,10 +215,10 @@ crux cache clear -o <origin>  # Delete cache for a specific origin
 
 ## Cache Behavior
 
-Cache files are stored under `~/.crux-cli/cache/` by default.
+Cache files are stored under `~/.config/crux-cli/cache/` by default.
 
 ```
-~/.crux-cli/cache/
+~/.config/crux-cli/cache/
   latest_month.json          # Most recent CrUX month (refreshed every 24 hours)
   device/
     <origin-hash>/
@@ -232,13 +232,13 @@ Cache files are stored under `~/.crux-cli/cache/` by default.
 
 ## Configuration
 
-Settings are stored in `~/.crux-cli/config.json`.
+Settings are stored in `~/.config/crux-cli/config.json` (respects `XDG_CONFIG_HOME`; override the directory with `CRUX_CLI_HOME`).
 
 | Key | Default | Description |
 |---|---|---|
 | `project_id` | | BigQuery project ID |
 | `api_key` | | CrUX API key |
-| `cache_dir` | `~/.crux-cli/cache` | Cache directory path |
+| `cache_dir` | `~/.config/crux-cli/cache` | Cache directory path |
 | `default_format` | `table` | Default output format |
 | `default_months` | `12` | Default number of months |
 
@@ -249,6 +249,7 @@ Override with environment variables:
 | `CRUX_PROJECT` | BigQuery project ID |
 | `CRUX_API_KEY` | CrUX API key |
 | `CRUX_CACHE_DIR` | Cache directory path |
+| `CRUX_CLI_HOME` | Config directory (default `~/.config/crux-cli`; also respects `XDG_CONFIG_HOME`) |
 
 ## License
 

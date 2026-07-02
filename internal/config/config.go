@@ -6,6 +6,12 @@ import (
 	"path/filepath"
 )
 
+const (
+	appDirName   = "crux-cli"
+	fileName     = "config.json"
+	envConfigDir = "CRUX_CLI_HOME"
+)
+
 type Config struct {
 	ProjectID     string `json:"project_id"`
 	APIKey        string `json:"api_key"`
@@ -21,13 +27,31 @@ func Default() *Config {
 	}
 }
 
+// Dir returns the config directory.
+// Priority: CRUX_CLI_HOME > $XDG_CONFIG_HOME/crux-cli > ~/.config/crux-cli.
+// On macOS this uses ~/.config (not ~/Library) to match the CLI convention.
 func Dir() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".crux-cli")
+	if d := os.Getenv(envConfigDir); d != "" {
+		return d
+	}
+	base := os.Getenv("XDG_CONFIG_HOME")
+	if base == "" {
+		home, _ := os.UserHomeDir()
+		base = filepath.Join(home, ".config")
+	}
+	return filepath.Join(base, appDirName)
 }
 
 func Path() string {
-	return filepath.Join(Dir(), "config.json")
+	return filepath.Join(Dir(), fileName)
+}
+
+// legacyPath is the pre-v0.4 location (~/.crux-cli/config.json). Load falls
+// back to it so existing users keep their settings; the next Save migrates
+// the file to the new location under ~/.config.
+func legacyPath() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".crux-cli", "config.json")
 }
 
 func Load() (*Config, error) {
@@ -35,6 +59,13 @@ func Load() (*Config, error) {
 	data, err := os.ReadFile(Path())
 	if err != nil {
 		if os.IsNotExist(err) {
+			// Fall back to the legacy location if present.
+			if legacy, lerr := os.ReadFile(legacyPath()); lerr == nil {
+				if uerr := json.Unmarshal(legacy, cfg); uerr != nil {
+					return nil, uerr
+				}
+				return cfg, nil
+			}
 			return cfg, nil
 		}
 		return nil, err
@@ -46,18 +77,18 @@ func Load() (*Config, error) {
 }
 
 func Save(cfg *Config) error {
-	if err := os.MkdirAll(Dir(), 0755); err != nil {
+	if err := os.MkdirAll(Dir(), 0o700); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(Path(), data, 0644)
+	return os.WriteFile(Path(), data, 0o600)
 }
 
 // CacheDirResolved returns the effective cache directory.
-// Priority: config file > CRUX_CACHE_DIR env > default (~/.crux-cli/cache).
+// Priority: config file > CRUX_CACHE_DIR env > default (<config dir>/cache).
 func (c *Config) CacheDirResolved() string {
 	if c.CacheDir != "" {
 		return c.CacheDir
@@ -65,8 +96,7 @@ func (c *Config) CacheDirResolved() string {
 	if env := os.Getenv("CRUX_CACHE_DIR"); env != "" {
 		return env
 	}
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".crux-cli", "cache")
+	return filepath.Join(Dir(), "cache")
 }
 
 // ProjectIDResolved returns the effective project ID.
