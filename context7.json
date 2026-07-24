@@ -1,0 +1,20 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "crux — Chrome UX Report CLI",
+  "description": "A command-line tool for Chrome UX Report (CrUX) field data: Core Web Vitals (LCP, INP, CLS) and related real-user metrics for any origin or URL. Two data sources — the public BigQuery table chrome-ux-report.materialized.device_summary for monthly origin-level history, and the free CrUX REST API for weekly time series and latest snapshots including per-URL data. Outputs table, CSV or JSON, and embeds its full agent reference behind `crux llm`.",
+  "folders": ["internal/llmdocs"],
+  "excludeFolders": ["plugins", ".github"],
+  "excludeFiles": ["spec.md", "README_ja.md"],
+  "rules": [
+    "The subcommand chooses the data source and they are not interchangeable. `crux device` reads BigQuery: origin-level, calendar-month buckets, billed to the user's Google Cloud project, and the only source for the ol and fid metrics. `crux history` and `crux record` read the free CrUX API: origin OR specific URL, 28-day rolling windows refreshed weekly.",
+    "`-d all` means opposite things per subcommand. `crux device -d all` returns one row PER device; `crux history -d all` and `crux record -d all` return ONE record aggregated across devices. Reading one as the other silently changes every number.",
+    "A density or p75 of 0 nearly always means missing or insufficient data, not a real zero. Never report it as a measurement.",
+    "All density and fraction fields are proportions in [0,1] — 0.83 means 83%. cls is a unitless ratio; every other metric is milliseconds.",
+    "In `crux device -f json` all 8 metrics are always present. The --metrics flag filters table and CSV columns only, never the JSON payload.",
+    "In `crux history -f json` the periods array is OLDEST first, while the table view prints newest first. Index 0 is not the latest period.",
+    "Bucket field prefixes differ per metric family: fast_/avg_/slow_ for lcp, inp, fcp, ttfb, ol and fid; small_/medium_/large_ for cls; low_/medium_/high_ for rtt. The first of each triple is the Good bucket.",
+    "Authentication differs per source: BigQuery uses Application Default Credentials plus a billing project (`crux auth set-project`, CRUX_PROJECT or --project); the CrUX API uses a key resolved --api-key > CRUX_API_KEY > config file. `crux auth status` reports both.",
+    "Limits: at most 50 origins per `crux device` invocation, --periods 1-40 for history (default 25), and roughly 150 CrUX API queries per minute per key with one request per target. A target with no data is skipped with a notice rather than failing.",
+    "Always pass -f json when parsing. The default table format is for humans. The complete reference is embedded in the binary as `crux llm` (or `crux llm --format json`)."
+  ]
+}

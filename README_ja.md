@@ -191,13 +191,27 @@ crux auth set-project <project-id>    # デフォルトの BigQuery プロジェ
 crux auth set-api-key <api-key>       # CrUX API キーを設定
 ```
 
-### `crux --llm`
+### AIエージェントから使う
 
-LLM / AI エージェント向けの詳細リファレンスを表示して終了します。2つのデータソース、全コマンド・全フラグ、指標の閾値、そして `-f json` 出力の各項目の意味（`fast_*` 等の密度、`p75_*` の単位、CrUX API の `good/needs_improvement/poor/p75` 構造）まで網羅しています。エージェントに `crux` を自律的に使わせる際のコンテキストとして利用できます。
+`crux llm` はAIエージェント向けの詳細リファレンスを出力します。2つのデータソース、全コマンド・全フラグ、指標の閾値、そして `-f json` 出力の各項目の意味（`fast_*` 等の密度、`p75_*` の単位、CrUX API の `good/needs_improvement/poor/p75` 構造）まで網羅しています。コマンドカタログは cobra ツリーから生成されるため実装と乖離せず、バイナリに埋め込まれているのでオフラインでも動作します。
 
 ```bash
-crux --llm            # 全体ガイド
-crux history --llm    # 同じガイド（任意のサブコマンドで有効）
+crux llm                  # Markdown
+crux llm --format json    # 章ごとのJSON配列
+crux --llm                # 非推奨エイリアス。従来どおり任意のサブコマンドで有効
+```
+
+Claude Code ではプラグインを導入すると `/crux-usage` と `/crux-install` が使えます。
+
+```
+/plugin marketplace add ideamans/claude-public-plugins
+/plugin install crux-cli@ideamans-plugins
+```
+
+同じスキルは Copilot や Cursor など Agent Skills 対応ホストでも利用できます。
+
+```bash
+gh skill install ideamans/crux-cli/plugins/crux-cli/skills/crux-usage --agent copilot
 ```
 
 ### `crux cache`

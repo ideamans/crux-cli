@@ -21,5 +21,25 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Vet
+        run: go vet ./...
+
+      # The embedded LLM reference is committed because go:embed needs real
+      # files at build time, so the guard against drift is regenerating it here.
+      - name: Regenerate the embedded LLM reference
+        run: go generate ./...
+
+      - name: Fail if the committed reference is stale
+        run: |
+          if ! git diff --exit-code -- internal/llmdocs; then
+            echo "::error::internal/llmdocs is out of date. Run 'go generate ./...' and commit the result."
+            exit 1
+          fi
+
       - name: Run tests
         run: go test ./...
+
+      - name: Verify the llm subcommand renders
+        run: |
+          go run ./cmd/crux llm | head -5
+          go run ./cmd/crux llm --format json | head -5
