@@ -191,17 +191,33 @@ crux auth set-project <project-id>    # Set the default BigQuery project ID
 crux auth set-api-key <api-key>       # Set the CrUX API key
 ```
 
-### `crux --llm`
+### Use from an AI agent
 
-Print a detailed reference aimed at LLMs / AI agents and exit. It documents both
-data sources, every command and flag, the metric thresholds, and the exact JSON
-field meanings for `-f json` output (e.g. `fast_*` densities, `p75_*` units, the
-CrUX API `good/needs_improvement/poor/p75` structure). Useful for letting an
-agent drive `crux` autonomously.
+`crux llm` prints a detailed reference and exits. It documents both data
+sources, every command and flag, the metric thresholds, and the exact JSON field
+meanings for `-f json` output (`fast_*` densities, `p75_*` units, the CrUX API
+`good/needs_improvement/poor/p75` structure). The command catalog is generated
+from the cobra tree, so it cannot drift; the whole reference is embedded in the
+binary and works offline.
 
 ```bash
-crux --llm            # global guide
-crux history --llm    # same guide (flag works on any subcommand)
+crux llm                  # Markdown
+crux llm --format json    # chapters as a JSON array
+crux --llm                # deprecated alias, still works on any subcommand
+```
+
+Claude Code users can install the plugin instead, which adds `/crux-usage` and
+`/crux-install`:
+
+```
+/plugin marketplace add ideamans/claude-public-plugins
+/plugin install crux-cli@ideamans-plugins
+```
+
+The same skills work in Copilot, Cursor and other Agent Skills hosts:
+
+```bash
+gh skill install ideamans/crux-cli/plugins/crux-cli/skills/crux-usage --agent copilot
 ```
 
 ### `crux cache`

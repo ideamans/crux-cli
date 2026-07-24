@@ -13,18 +13,42 @@ import (
 	"github.com/ideamans/crux-cli/internal/cruxapi"
 	"github.com/ideamans/crux-cli/internal/formatter"
 	"github.com/ideamans/crux-cli/internal/runner"
+	"github.com/ideamans/go-llm-cli-kit/llmcmd"
 	"github.com/spf13/cobra"
 )
 
+//go:generate go run . gen-llmdocs
+
+// PluginVersion is the released version of this CLI. It is also the version
+// recorded in plugins/crux-cli/.claude-plugin/plugin.json — a test enforces
+// that the two agree, and the release workflow enforces that both agree with
+// the git tag. Bump it in the same commit as the tag.
+const PluginVersion = "0.5.0"
+
 func main() {
+	// --llm anywhere on the command line prints the reference and exits,
+	// bypassing cobra so it keeps working regardless of subcommand position.
+	// Deprecated in favour of `crux llm`, but removing it would break every
+	// existing caller.
+	if handled, err := llmcmd.HandleLegacy(os.Args[1:], llmConfig(), os.Stdout); handled {
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	rootCmd.AddCommand(newGenerateCommand())
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "crux",
-	Short: "Query Chrome UX Report (CrUX) data via BigQuery or the CrUX API",
+	Use:     "crux",
+	Short:   "Query Chrome UX Report (CrUX) data via BigQuery or the CrUX API",
+	Version: PluginVersion,
 }
 
 // ── crux device ───────────────────────────────────────────────────────────────

@@ -1,0 +1,13 @@
+{
+  "name": "crux-cli",
+  "description": "Adds /crux-usage and /crux-install skills for querying Chrome UX Report (CrUX) real-user performance data — Core Web Vitals for any origin or URL, from BigQuery or the CrUX API.",
+  "version": "0.5.0",
+  "author": {
+    "name": "Ideamans Inc.",
+    "email": "support@ideamans.com"
+  },
+  "homepage": "https://github.com/ideamans/crux-cli",
+  "repository": "https://github.com/ideamans/crux-cli",
+  "license": "MIT",
+  "keywords": ["crux", "core-web-vitals", "performance", "lcp", "inp", "cls", "cli", "llm"]
+}
