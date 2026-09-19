@@ -17,11 +17,15 @@
 
 ## 必要なもの
 
-- Go 1.21 以上
-- Google Cloud プロジェクト（BigQuery のクエリコストはお客様のプロジェクトに課金されます）
-- [Google Cloud SDK](https://cloud.google.com/sdk)（Application Default Credentials の設定に使用）
+- **`crux device`（BigQuery）:** Google Cloud のプロジェクト（クエリ料金はここに課金される）と、Application Default Credentials のための [Google Cloud SDK](https://cloud.google.com/sdk)
+- **`crux history` / `crux record`（CrUX API）:** CrUX API のキーだけ
+- **ソースからビルドする場合:** Go 1.21 以上
 
 ## インストール
+
+[Releases](https://github.com/ideamans/crux-cli/releases) から環境に合ったアーカイブを取得し、中の `crux` を `PATH` の通った場所に置いてください。Claude Code では、プラグインの `/crux-install` スキルが導入まで行います。
+
+ソースからビルドする場合（Go 1.21 以上）:
 
 ```bash
 git clone https://github.com/ideamans/crux-cli.git
