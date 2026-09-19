@@ -17,11 +17,15 @@ A command-line tool to query [Chrome UX Report (CrUX)](https://developer.chrome.
 
 ## Prerequisites
 
-- Go 1.21+
-- A Google Cloud project (BigQuery queries are billed to your project)
-- [Google Cloud SDK](https://cloud.google.com/sdk) for Application Default Credentials
+- **`crux device` (BigQuery):** a Google Cloud project (queries are billed to it) and the [Google Cloud SDK](https://cloud.google.com/sdk) for Application Default Credentials
+- **`crux history` / `crux record` (CrUX API):** only a CrUX API key
+- **Building from source:** Go 1.21+
 
 ## Installation
+
+Download the archive for your platform from [Releases](https://github.com/ideamans/crux-cli/releases) and put the `crux` binary on your `PATH`. Claude Code users can let the `/crux-install` skill do this.
+
+To build from source (Go 1.21+):
 
 ```bash
 git clone https://github.com/ideamans/crux-cli.git
