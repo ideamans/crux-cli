@@ -8,6 +8,7 @@ import (
 	"cloud.google.com/go/bigquery"
 	"github.com/ideamans/crux-cli/internal/crux"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 const deviceSummaryTable = "chrome-ux-report.materialized.device_summary"
@@ -18,7 +19,12 @@ type Client struct {
 }
 
 func New(ctx context.Context, projectID string) (*Client, error) {
-	client, err := bigquery.NewClient(ctx, projectID)
+	return newClient(ctx, projectID)
+}
+
+// newClient lets tests point the client at a fake endpoint.
+func newClient(ctx context.Context, projectID string, opts ...option.ClientOption) (*Client, error) {
+	client, err := bigquery.NewClient(ctx, projectID, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("bigquery: %w", err)
 	}
